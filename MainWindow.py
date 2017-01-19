@@ -1,6 +1,6 @@
 #!/usr/bin/env pythonw
 import numpy as np
-import matplotlib.pylpot as plt
+import matplotlib.pyplot as plt
 #from numpy import arange, sin, pi
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -58,7 +58,17 @@ class MyFrame(wx.Frame):
             for i in range(0, 5):
                 self.buttons.append(wx.Button(self, -1, btn_name[i]))
                 self.sizer2.Add(self.buttons[i], 1, wx.EXPAND)
-
+            #binding buttons
+            
+            
+            self.Bind(wx.EVT_BUTTON, self.plot_data, self.buttons[0])
+            self.Bind(wx.EVT_BUTTON, self.mean_data, self.buttons[1])
+            '''
+            self.Bind(wx.EVT_BUTTON, self.mod_data, self.buttons[2])
+            self.Bind(wx.EVT_BUTTON, self.median_data, self.buttons[3])
+            self.Bind(wx.EVT_BUTTON, self.cdf_data, self.buttons[4])
+            '''
+            
             # Use some sizers to see layout options
             self.sizer = wx.BoxSizer(wx.HORIZONTAL)
             self.sizer.Add(self.control, 5, wx.EXPAND)
@@ -98,7 +108,25 @@ class MyFrame(wx.Frame):
                 self.control.SetValue(f.read())
                 f.close()
             dlg.Destroy()
-
+        def plot_data(self,event):
+            fig1 = self.figure.add_subplot(111)
+            x = self.data[:,0]
+            y = self.data[:,1]
+            fig1.plot(x,y)
+            self.canvas.draw()
+        def mean_data(self,event):
+            fig1 = self.figure.add_subplot(111)
+            x1 = self.data[:,0]
+            y1 = self.data[:,1]
+            meany = np.mean(self.data[:,1])
+            #print meany
+            y_mean = np.zeros((len(x1),1))
+            for k in range(0, 10, 1):
+                y_mean[k] = meany
+                
+            fig1.plot(x1, y_mean)
+            self.canvas.draw()
+ 
 class App(wx.App):
     def OnInit(self):
         'Create the main window and insert the custom frame'
