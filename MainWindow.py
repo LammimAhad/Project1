@@ -21,14 +21,13 @@ class MyFrame(wx.Frame):
             menuAbout = filemenu.Append(wx.ID_ABOUT, "&About"," Information about this program")
             filemenu.AppendSeparator()
             menuOpen = filemenu.Append(wx.ID_OPEN, "&Open"," Opens a selected file from memory")
-            filemenu.Append(wx.ID_CLOSE, "&Close"," Closes an already opened file")
-            filemenu.Append(wx.ID_SAVEAS, "&Save as"," Save your current file as")
+            menuClose = filemenu.Append(wx.ID_CLOSE, "&Close"," Closes an already opened file")
+            menuSave = filemenu.Append(wx.ID_SAVEAS, "&Save as"," Save your current file as")
             menuExit = filemenu.Append(wx.ID_EXIT, "&Exit"," Terminate the program")
             
             #adding a plot window
             self.figure = Figure()
             self.axes = self.figure.add_subplot(111)
-           
             self.canvas = FigureCanvas(self, -1, self.figure)
 
             self.sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -46,6 +45,8 @@ class MyFrame(wx.Frame):
             
             #set events:
             self.Bind(wx.EVT_MENU, self.OnAbout, menuAbout)
+            self.Bind(wx.EVT_MENU, self.OnClose, menuClose)
+            self.Bind(wx.EVT_MENU, self.OnSave, menuSave)
             self.Bind(wx.EVT_MENU, self.OnOpen, menuOpen)
             self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
             self.Show(True)
@@ -65,9 +66,8 @@ class MyFrame(wx.Frame):
             self.Bind(wx.EVT_BUTTON, self.mean_data, self.buttons[1])
             self.Bind(wx.EVT_BUTTON, self.mod_data, self.buttons[2])
             self.Bind(wx.EVT_BUTTON, self.median_data, self.buttons[3])
-            '''
             self.Bind(wx.EVT_BUTTON, self.cdf_data, self.buttons[4])
-            '''
+            
             
             # Use some sizers to see layout options
             self.sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -78,7 +78,6 @@ class MyFrame(wx.Frame):
             #Layout sizers
             self.SetSizer(self.sizer)
             self.SetAutoLayout(1)
-            #self.sizer.Fit(self)
             self.Show()
             
             
@@ -86,13 +85,46 @@ class MyFrame(wx.Frame):
         
         def OnAbout(self,e):
             # A message dialog box with an OK button, wx.OK is a standard ID
-            dlg = wx.MessageDialog( self, "Sorry, there is nothing much to do here at this point. But there are some attempts to show how it will look at the end. \nLet's start with small steps",
+            dlg = wx.MessageDialog( self, "Welcome to my program! \n Here you can load text files with frequency distribution of statistical data and see several central values according to the buttons given. \nThank you!",
                                    "About this application", wx.OK)
             dlg.ShowModal() #show it
             dlg.Destroy() # destroy it when finished
-        
+                
+        def OnClose(self,e):
+            """Close this File"""
+            self.control.SetValue("")
+            self.figure.clf()
+            self.figure.canvas.draw()
+            self.axes = self.figure.add_subplot(111)
+          
+            
+        def OnSave(self,e):
+        # Save away the edited text
+        # Open the file, do an RU sure check for an overwrite!
+            dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", ".txt", \
+                wx.SAVE | wx.OVERWRITE_PROMPT)
+            if dlg.ShowModal() == wx.ID_OK:
+            # Grab the content to be saved
+                itcontains = self.control.GetValue()
+
+            # Open the file for write, write, close
+            self.filename=dlg.GetFilename()
+            self.dirname=dlg.GetDirectory()
+            filehandle=open(os.path.join(self.dirname, self.filename),'w')
+            filehandle.write(itcontains)
+            filehandle.close()
+            # Get rid of the dialog to keep things tidy
+            dlg.Destroy()
+            
+            
         def OnExit(self,e):
-            self.Close(True) # close the frame
+            dlg = wx.MessageDialog(self, 
+               "Do you really want to close this application?",
+               "Confirm Exit", wx.OK|wx.CANCEL|wx.ICON_QUESTION)
+            result = dlg.ShowModal()
+            dlg.Destroy()
+            if result == wx.ID_OK:
+                self.Destroy()
             
         def OnOpen(self,e):  #Open a file
             """Open a file"""
@@ -104,10 +136,11 @@ class MyFrame(wx.Frame):
                 filepath=os.path.join(self.dirname, self.filename)
                 f = open(os.path.join(self.dirname, self.filename), 'r')
                 self.data = np.loadtxt(filepath)
-                print self.data
+                #self.figure.canvas.draw()
                 self.control.SetValue(f.read())
                 f.close()
             dlg.Destroy()
+            
         def plot_data(self,event):
             fig1 = self.figure.add_subplot(111)
             x = self.data[:,0]
@@ -129,7 +162,7 @@ class MyFrame(wx.Frame):
             y_mean = sumxy/sumy
                 
             #fig1.plot(y_mean, np.max(self.data[:,1]), marker='*', markersize = 5)
-            fig1.plot([y_mean, y_mean], [0, 90])
+            fig1.plot([y_mean, y_mean], [0, np.max(self.data[:,1])])
             
             self.canvas.draw()
          
@@ -142,7 +175,7 @@ class MyFrame(wx.Frame):
             mask = (y1==y_max)
             index=np.where(mask)
             #fig1.plot(y_mean, np.max(self.data[:,1]), marker='*', markersize = 5)
-            fig1.plot([x1[index], x1[index]], [0, 90])
+            fig1.plot([x1[index], x1[index]], [0, np.max(self.data[:,1])])
             
             self.canvas.draw()
             
@@ -155,12 +188,10 @@ class MyFrame(wx.Frame):
             
             if (sumy%2) == 1:
                 med_pos = np.ceil(sumy/2)
-                print med_pos
                 for i in range (0, len(x1)):
                     if yc[i]>=med_pos:
                         med_val=x1[i]
-                        print med_val
-                        i=len(x1)-1
+                        break
             else:
                 med_pos1 = sumy/2
                 med_pos2 = (sumy/2) +1
@@ -170,14 +201,19 @@ class MyFrame(wx.Frame):
                         for j in range (0, len(x1)):
                             if yc[j]>=med_pos2:
                                 med_val2 = x1[j]
-                                #j=len(x1)
                                 break
-                                
-                        #i=len(x1)
                         break
                 med_val=(med_val1 + med_val2)/2
             
-            fig1.plot([med_val, med_val], [0, 90])
+            fig1.plot([med_val, med_val], [0, np.max(self.data[:,1])])
+            self.canvas.draw()
+        def cdf_data(self,event):
+            fig1 = self.figure.add_subplot(111)
+            x1 = self.data[:,0]
+            y1 = self.data[:,1]
+            yc = np.cumsum(y1)
+            
+            fig1.plot(x1,yc)
             self.canvas.draw()
             
 class App(wx.App):
@@ -188,5 +224,5 @@ class App(wx.App):
         return True
 
 app = wx.App(False)
-frame = MyFrame(None, 'Practice App')
+frame = MyFrame(None, 'Data Analysis')
 app.MainLoop()
