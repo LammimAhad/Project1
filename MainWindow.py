@@ -63,9 +63,9 @@ class MyFrame(wx.Frame):
             
             self.Bind(wx.EVT_BUTTON, self.plot_data, self.buttons[0])
             self.Bind(wx.EVT_BUTTON, self.mean_data, self.buttons[1])
-            '''
             self.Bind(wx.EVT_BUTTON, self.mod_data, self.buttons[2])
             self.Bind(wx.EVT_BUTTON, self.median_data, self.buttons[3])
+            '''
             self.Bind(wx.EVT_BUTTON, self.cdf_data, self.buttons[4])
             '''
             
@@ -114,19 +114,72 @@ class MyFrame(wx.Frame):
             y = self.data[:,1]
             fig1.plot(x,y)
             self.canvas.draw()
+            
         def mean_data(self,event):
             fig1 = self.figure.add_subplot(111)
             x1 = self.data[:,0]
             y1 = self.data[:,1]
-            meany = np.mean(self.data[:,1])
-            #print meany
-            y_mean = np.zeros((len(x1),1))
-            for k in range(0, 10, 1):
-                y_mean[k] = meany
+            
+            sumxy = 0
+            sumy = 0
+           
+            for k in range(0, 10):
+                sumxy = sumxy + x1[k] * y1[k]
+                sumy = sumy + y1[k]
+            y_mean = sumxy/sumy
                 
-            fig1.plot(x1, y_mean)
+            #fig1.plot(y_mean, np.max(self.data[:,1]), marker='*', markersize = 5)
+            fig1.plot([y_mean, y_mean], [0, 90])
+            
             self.canvas.draw()
- 
+         
+        def mod_data(self,event):
+            fig1 = self.figure.add_subplot(111)
+            x1 = self.data[:,0]
+            y1 = self.data[:,1]
+        
+            y_max = np.max(self.data[:,1])
+            mask = (y1==y_max)
+            index=np.where(mask)
+            #fig1.plot(y_mean, np.max(self.data[:,1]), marker='*', markersize = 5)
+            fig1.plot([x1[index], x1[index]], [0, 90])
+            
+            self.canvas.draw()
+            
+        def median_data(self,event):
+            fig1 = self.figure.add_subplot(111)
+            x1 = self.data[:,0]
+            y1 = self.data[:,1]
+            yc = np.cumsum(y1)
+            sumy = np.sum(y1)
+            
+            if (sumy%2) == 1:
+                med_pos = np.ceil(sumy/2)
+                print med_pos
+                for i in range (0, len(x1)):
+                    if yc[i]>=med_pos:
+                        med_val=x1[i]
+                        print med_val
+                        i=len(x1)-1
+            else:
+                med_pos1 = sumy/2
+                med_pos2 = (sumy/2) +1
+                for i in range (0, len(x1)):
+                    if yc[i]>=med_pos1:
+                        med_val1=x1[i]
+                        for j in range (0, len(x1)):
+                            if yc[j]>=med_pos2:
+                                med_val2 = x1[j]
+                                #j=len(x1)
+                                break
+                                
+                        #i=len(x1)
+                        break
+                med_val=(med_val1 + med_val2)/2
+            
+            fig1.plot([med_val, med_val], [0, 90])
+            self.canvas.draw()
+            
 class App(wx.App):
     def OnInit(self):
         'Create the main window and insert the custom frame'
