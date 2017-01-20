@@ -1,0 +1,30 @@
+package:
+  name: Project1
+  version: 0.0.1
+
+source:
+  git_rev: v0.0.1
+  git_url: https://github.com/Syeda-Lammim-Ahad/Project1.git
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - numpy
+    - matplotlib
+
+  run:
+    - python
+    - numpy
+    - wxpython
+
+
+test:
+  imports:
+    - Project1
+
+about:
+  home: https://github.com/Syeda-Lammim-Ahad/Project1
+  license: GPL3
+  license_file: LICENSE
+  description: 'The package does miracles'
